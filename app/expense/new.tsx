@@ -22,6 +22,8 @@ export default function NewExpenseScreen() {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [paidBy, setPaidBy] = useState<string | null>(null);
+  const [splitType, setSplitType] = useState<'equal' | 'custom'>('equal'); // Added split logic
+  const [customSplit, setCustomSplit] = useState<Record<string, number>>({}); // Custom split logic
 
   const handleSubmit = () => {
     if (!title || !amount || !selectedGroup || !selectedCategory || !paidBy) {
@@ -31,10 +33,16 @@ export default function NewExpenseScreen() {
     const group = groups.find(g => g.id === selectedGroup);
     if (!group) return;
 
-    const splits = group.members.reduce((acc, member) => {
-      acc[member.id] = parseFloat(amount) / group.members.length;
-      return acc;
-    }, {} as Record<string, number>);
+    let splits: Record<string, number>;
+
+    if (splitType === 'equal') {
+      splits = group.members.reduce((acc, member) => {
+        acc[member.id] = parseFloat(amount) / group.members.length;
+        return acc;
+      }, {} as Record<string, number>);
+    } else {
+      splits = customSplit; // Custom split logic
+    }
 
     addExpense({
       groupId: selectedGroup,
@@ -44,7 +52,7 @@ export default function NewExpenseScreen() {
       date: new Date().toISOString(),
       category: selectedCategory,
       paidBy,
-      splitType: 'equal',
+      splitType,
       splits,
     });
 
@@ -103,16 +111,9 @@ export default function NewExpenseScreen() {
             {groups.map((group) => (
               <TouchableOpacity
                 key={group.id}
-                style={[
-                  styles.chip,
-                  selectedGroup === group.id && styles.chipSelected,
-                ]}
+                style={[styles.chip, selectedGroup === group.id && styles.chipSelected]}
                 onPress={() => setSelectedGroup(group.id)}>
-                <Text
-                  style={[
-                    styles.chipText,
-                    selectedGroup === group.id && styles.chipTextSelected,
-                  ]}>
+                <Text style={[styles.chipText, selectedGroup === group.id && styles.chipTextSelected]}>
                   {group.name}
                 </Text>
               </TouchableOpacity>
@@ -126,16 +127,9 @@ export default function NewExpenseScreen() {
             {CATEGORIES.map((category) => (
               <TouchableOpacity
                 key={category}
-                style={[
-                  styles.chip,
-                  selectedCategory === category && styles.chipSelected,
-                ]}
+                style={[styles.chip, selectedCategory === category && styles.chipSelected]}
                 onPress={() => setSelectedCategory(category)}>
-                <Text
-                  style={[
-                    styles.chipText,
-                    selectedCategory === category && styles.chipTextSelected,
-                  ]}>
+                <Text style={[styles.chipText, selectedCategory === category && styles.chipTextSelected]}>
                   {category}
                 </Text>
               </TouchableOpacity>
@@ -152,16 +146,9 @@ export default function NewExpenseScreen() {
                 ?.members.map((member) => (
                   <TouchableOpacity
                     key={member.id}
-                    style={[
-                      styles.chip,
-                      paidBy === member.id && styles.chipSelected,
-                    ]}
+                    style={[styles.chip, paidBy === member.id && styles.chipSelected]}
                     onPress={() => setPaidBy(member.id)}>
-                    <Text
-                      style={[
-                        styles.chipText,
-                        paidBy === member.id && styles.chipTextSelected,
-                      ]}>
+                    <Text style={[styles.chipText, paidBy === member.id && styles.chipTextSelected]}>
                       {member.name}
                     </Text>
                   </TouchableOpacity>
@@ -169,15 +156,41 @@ export default function NewExpenseScreen() {
             </ScrollView>
           </View>
         )}
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Split Type</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+            {['equal', 'custom'].map((splitOption) => (
+              <TouchableOpacity
+                key={splitOption}
+                style={[styles.chip, splitType === splitOption && styles.chipSelected]}
+                onPress={() => setSplitType(splitOption as 'equal' | 'custom')}>
+                <Text style={[styles.chipText, splitType === splitOption && styles.chipTextSelected]}>
+                  {splitOption.charAt(0).toUpperCase() + splitOption.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {splitType === 'custom' && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Custom Split</Text>
+            {/* Here you can add logic for custom splits, i.e., setting individual member splits */}
+            <TextInput
+              style={styles.input}
+              value={JSON.stringify(customSplit)} // Just an example, customize as needed
+              onChangeText={(text) => setCustomSplit(JSON.parse(text))}
+              placeholder="Enter custom splits (JSON format)"
+              placeholderTextColor="#94a3b8"
+            />
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[
-            styles.submitButton,
-            (!title || !amount || !selectedGroup || !selectedCategory || !paidBy) &&
-              styles.submitButtonDisabled,
-          ]}
+          style={[styles.submitButton, (!title || !amount || !selectedGroup || !selectedCategory || !paidBy) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={!title || !amount || !selectedGroup || !selectedCategory || !paidBy}>
           <Text style={styles.submitButtonText}>Add Expense</Text>
