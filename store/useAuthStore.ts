@@ -5,6 +5,7 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  updateProfile,
   User,
 } from 'firebase/auth';
 
@@ -13,7 +14,7 @@ interface AuthState {
   loading: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<void>; // updated
   signOut: () => Promise<void>;
 }
 
@@ -33,10 +34,19 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  signUp: async (email: string, password: string) => {
+  signUp: async (email: string, password: string, name: string) => {
     try {
       set({ loading: true, error: null });
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // ✅ Set display name after account creation
+      await updateProfile(user, {
+        displayName: name,
+      });
+
+      // Update local state
+      set({ user });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -48,6 +58,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
       await firebaseSignOut(auth);
+      set({ user: null });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -56,7 +67,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 }));
 
-// Initialize auth state listener
+// 🔁 Auth state listener
 onAuthStateChanged(auth, (user) => {
   useAuthStore.setState({ user, loading: false });
 });

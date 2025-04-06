@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { View, StyleSheet, Image,Text, TextInput, Button } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
+
+import { Text, TextInput, Button } from 'react-native-paper'; 
 
 import { Link } from 'expo-router';
 import { useAuthStore } from '@/store/useAuthStore';

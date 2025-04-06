@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { View, StyleSheet, Image ,Text, TextInput, Button} from 'react-native';
-
+import { View, StyleSheet, Image } from 'react-native';
+import { Text, TextInput, Button } from 'react-native-paper';
 import { Link } from 'expo-router';
 import { useAuthStore } from '@/store/useAuthStore';
 
 export default function SignUpScreen() {
+  const [name, setName] = useState('');          
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
   const { signUp, loading, error } = useAuthStore();
 
   const handleSignUp = async () => {
-    await signUp(email, password);
+    if (!name.trim()) return alert('Please enter your name');
+    await signUp(email, password, name);        
   };
 
   return (
@@ -24,9 +27,15 @@ export default function SignUpScreen() {
         <Text variant="bodyLarge" style={styles.subtitle}>Sign up to get started</Text>
       </View>
 
-      {error && (
-        <Text style={styles.error}>{error}</Text>
-      )}
+      {error && <Text style={styles.error}>{error}</Text>}
+
+      <TextInput
+        label="Name"
+        value={name}
+        onChangeText={setName}
+        style={styles.input}
+        autoCapitalize="words"
+      />
 
       <TextInput
         label="Email"

@@ -1,10 +1,26 @@
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Switch,
+  ScrollView,
+} from 'react-native';
 import { useState } from 'react';
-import { ChevronRight, Moon, Bell, Download, Trash2 } from 'lucide-react-native';
+import {
+  ChevronRight,
+  Moon,
+  Bell,
+  Download,
+  Trash2,
+  LogOut,
+} from 'lucide-react-native';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function SettingsScreen() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
+  const { signOut } = useAuthStore(); // ✅ Import signOut from auth store
 
   return (
     <View style={styles.container}>
@@ -13,14 +29,16 @@ export default function SettingsScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
-          
+
           <View style={styles.settingItem}>
             <View style={styles.settingIcon}>
               <Moon size={24} color="#64748b" />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Dark Mode</Text>
-              <Text style={styles.settingDescription}>Switch to dark theme</Text>
+              <Text style={styles.settingDescription}>
+                Switch to dark theme
+              </Text>
             </View>
             <Switch
               value={isDarkMode}
@@ -36,7 +54,9 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Notifications</Text>
-              <Text style={styles.settingDescription}>Get expense reminders</Text>
+              <Text style={styles.settingDescription}>
+                Get expense reminders
+              </Text>
             </View>
             <Switch
               value={notifications}
@@ -49,14 +69,16 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data</Text>
-          
+
           <TouchableOpacity style={styles.settingItem}>
             <View style={styles.settingIcon}>
               <Download size={24} color="#64748b" />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Export Data</Text>
-              <Text style={styles.settingDescription}>Download your expense history</Text>
+              <Text style={styles.settingDescription}>
+                Download your expense history
+              </Text>
             </View>
             <ChevronRight size={20} color="#64748b" />
           </TouchableOpacity>
@@ -66,10 +88,33 @@ export default function SettingsScreen() {
               <Trash2 size={24} color="#dc2626" />
             </View>
             <View style={styles.settingContent}>
-              <Text style={[styles.settingTitle, styles.dangerText]}>Clear Data</Text>
-              <Text style={styles.settingDescription}>Remove all expenses and groups</Text>
+              <Text style={[styles.settingTitle, styles.dangerText]}>
+                Clear Data
+              </Text>
+              <Text style={styles.settingDescription}>
+                Remove all expenses and groups
+              </Text>
             </View>
             <ChevronRight size={20} color="#dc2626" />
+          </TouchableOpacity>
+        </View>
+
+        {/* ✅ Sign Out Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <TouchableOpacity style={styles.settingItem} onPress={signOut}>
+            <View style={styles.settingIcon}>
+              <LogOut size={24} color="#ef4444" />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={[styles.settingTitle, { color: '#ef4444' }]}>
+                Sign Out
+              </Text>
+              <Text style={styles.settingDescription}>
+                Log out of your account
+              </Text>
+            </View>
+            <ChevronRight size={20} color="#ef4444" />
           </TouchableOpacity>
         </View>
 

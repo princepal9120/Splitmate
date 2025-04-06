@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Spiltmind",
-    "slug": "spiltmind",
+    "name": "Spiltmate",
+    "slug": "spiltmate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

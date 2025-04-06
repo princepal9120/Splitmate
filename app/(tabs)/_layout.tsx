@@ -1,5 +1,10 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, Users, ChartPie as PieChart, Settings } from 'lucide-react-native';
+import {
+  Users,
+  Home,
+  ChartPie as PieChart,
+  Settings,
+} from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -20,7 +25,8 @@ export default function TabLayout() {
           fontFamily: 'Inter-Medium',
           fontSize: 12,
         },
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
@@ -39,14 +45,18 @@ export default function TabLayout() {
         name="analytics"
         options={{
           title: 'Analytics',
-          tabBarIcon: ({ size, color }) => <PieChart size={size} color={color} />,
+          tabBarIcon: ({ size, color }) => (
+            <PieChart size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ size, color }) => <Settings size={size} color={color} />,
+          tabBarIcon: ({ size, color }) => (
+            <Settings size={size} color={color} />
+          ),
         }}
       />
     </Tabs>
