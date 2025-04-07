@@ -16,12 +16,15 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>; // updated
   signOut: () => Promise<void>;
+  setUser: (userData: User | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: true,
   error: null,
+
+  setUser: (userData) => set({ user: userData, error: null }),
 
   signIn: async (email: string, password: string) => {
     try {
