@@ -5,8 +5,10 @@ import {
   TouchableOpacity,
   Switch,
   ScrollView,
+  Alert,
+  Share,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ChevronRight,
   Moon,
@@ -16,11 +18,203 @@ import {
   LogOut,
 } from 'lucide-react-native';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useStore } from '@/store/useStore';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Configure how notifications appear when the app is in the foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 export default function SettingsScreen() {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(true);
-  const { signOut } = useAuthStore(); // ✅ Import signOut from auth store
+  const [notifications, setNotifications] = useState(false);
+  const { signOut } = useAuthStore();
+  
+  // Get store data and clear functions
+  const { groups, expenses, clearAllData } = useStore();
+
+  // Load notification preference when component mounts
+  useEffect(() => {
+    loadNotificationSettings();
+  }, []);
+
+  // Load notification settings from storage
+  const loadNotificationSettings = async () => {
+    try {
+      const notificationEnabled = await AsyncStorage.getItem('notificationsEnabled');
+      if (notificationEnabled !== null) {
+        setNotifications(notificationEnabled === 'true');
+      }
+    } catch (error) {
+      console.error('Error loading notification settings:', error);
+    }
+  };
+
+  // Save notification settings to storage
+  const saveNotificationSettings = async (value) => {
+    try {
+      await AsyncStorage.setItem('notificationsEnabled', value.toString());
+    } catch (error) {
+      console.error('Error saving notification settings:', error);
+    }
+  };
+
+  // Request notification permissions
+  const requestNotificationPermissions = async () => {
+    if (Device.isDevice) {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please enable notifications in your device settings to receive expense reminders.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+      return true;
+    } else {
+      Alert.alert('Notifications not available', 'Notifications require a physical device.');
+      return false;
+    }
+  };
+
+  // Schedule a weekly expense reminder notification
+  const scheduleExpenseReminder = async () => {
+    await Notifications.cancelAllScheduledNotificationsAsync(); // Clear existing notifications
+    
+    // Schedule weekly notification
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Expense Tracker Reminder",
+        body: "Don't forget to track your expenses this week!",
+        data: { screen: 'expenses' },
+      },
+      trigger: {
+        weekday: 1, // Monday
+        hour: 9, // 9 AM
+        minute: 0,
+        repeats: true,
+      },
+    });
+    
+    // Schedule monthly notification for budget review
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Monthly Budget Review",
+        body: "It's time to review your monthly expenses and budget.",
+        data: { screen: 'reports' },
+      },
+      trigger: {
+        day: 1, // First day of month
+        hour: 10,
+        minute: 0,
+        repeats: true,
+      },
+    });
+  };
+
+  // Handle notification toggle
+  const handleToggleNotifications = async (value) => {
+    if (value) {
+      const permissionGranted = await requestNotificationPermissions();
+      if (permissionGranted) {
+        await scheduleExpenseReminder();
+        setNotifications(true);
+        saveNotificationSettings(true);
+      } else {
+        // Reset switch if permissions weren't granted
+        setNotifications(false);
+        saveNotificationSettings(false);
+      }
+    } else {
+      // Cancel all notifications if toggle is turned off
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      setNotifications(false);
+      saveNotificationSettings(false);
+    }
+  };
+
+  // Function to handle data clearing with confirmation
+  const handleClearData = () => {
+    Alert.alert(
+      "Clear All Data",
+      "Are you sure you want to remove all expenses and groups? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        { 
+          text: "Clear Data", 
+          onPress: () => {
+            clearAllData();
+            Alert.alert("Success", "All data has been cleared successfully.");
+          },
+          style: "destructive"
+        }
+      ]
+    );
+  };
+
+  // Function to export data
+  const handleExportData = async () => {
+    try {
+      // Prepare data to export
+      const exportData = {
+        groups,
+        expenses,
+        exportDate: new Date().toISOString(),
+        appVersion: "1.0.0"
+      };
+      
+      // Convert to JSON string
+      const jsonData = JSON.stringify(exportData, null, 2);
+      
+      // Create a temporary file
+      const fileUri = `${FileSystem.cacheDirectory}expense_tracker_data.json`;
+      await FileSystem.writeAsStringAsync(fileUri, jsonData);
+      
+      // Check if sharing is available
+      const isSharingAvailable = await Sharing.isAvailableAsync();
+      
+      if (isSharingAvailable) {
+        // Share the file
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Export Expense Tracker Data',
+          UTI: 'public.json'
+        });
+      } else {
+        // Fallback if sharing isn't available
+        Alert.alert(
+          "Sharing Not Available",
+          "File sharing is not available on this device."
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "Export Failed",
+        "There was an error exporting your data. Please try again."
+      );
+      console.error("Export error:", error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -60,17 +254,42 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={notifications}
-              onValueChange={setNotifications}
+              onValueChange={handleToggleNotifications}
               trackColor={{ false: '#e2e8f0', true: '#0891b2' }}
               thumbColor={notifications ? '#fff' : '#fff'}
             />
           </View>
         </View>
 
+        {notifications && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Notification Settings</Text>
+            <View style={styles.settingItem}>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingTitle}>Weekly Reminder</Text>
+                <Text style={styles.settingDescription}>
+                  Receive weekly expense tracking reminders on Monday at 9:00 AM
+                </Text>
+              </View>
+            </View>
+            <View style={styles.settingItem}>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingTitle}>Monthly Budget Review</Text>
+                <Text style={styles.settingDescription}>
+                  Get a reminder on the 1st of each month at 10:00 AM
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data</Text>
 
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={handleExportData}
+          >
             <View style={styles.settingIcon}>
               <Download size={24} color="#64748b" />
             </View>
@@ -83,7 +302,10 @@ export default function SettingsScreen() {
             <ChevronRight size={20} color="#64748b" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.settingItem, styles.dangerItem]}>
+          <TouchableOpacity 
+            style={[styles.settingItem, styles.dangerItem]}
+            onPress={handleClearData}
+          >
             <View style={styles.settingIcon}>
               <Trash2 size={24} color="#dc2626" />
             </View>
@@ -99,7 +321,6 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ✅ Sign Out Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           <TouchableOpacity style={styles.settingItem} onPress={signOut}>

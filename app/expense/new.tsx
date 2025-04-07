@@ -23,8 +23,44 @@ export default function NewExpenseScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [paidBy, setPaidBy] = useState<string | null>(null);
   const [splitType, setSplitType] = useState<'equal' | 'custom'>('equal'); // Added split logic
-  const [customSplit, setCustomSplit] = useState<Record<string, number>>({}); // Custom split logic
+  const [customSplitText, setCustomSplitText] = useState("");
+  const [customSplits, setCustomSplits] = useState<Record<string, number>>({});
 
+
+
+  const parseCustomSplitText = (text: string) => {
+    const group = groups.find((g) => g.id === selectedGroup);
+    if (!group) return;
+  
+    const parsed: Record<string, number> = {};
+  
+    const entries = text.split(/[,;]/); // Split by comma or semicolon
+    entries.forEach((entry) => {
+      const match = entry.match(/(I|[\w\s]+)\s+paid\s+(\d+(\.\d+)?)/i);
+      if (match) {
+        const nameRaw = match[1].trim().toLowerCase();
+        const amount = parseFloat(match[2]);
+  
+        let userId = "";
+  
+        if (nameRaw === "i") {
+          userId = user.id;
+        } else {
+          const matchedMember = group.members.find(
+            (m) => m.name.toLowerCase() === nameRaw
+          );
+          if (matchedMember) userId = matchedMember.id;
+        }
+  
+        if (userId) {
+          parsed[userId] = amount;
+        }
+      }
+    });
+  
+    setCustomSplits(parsed);
+  };
+  
   const handleSubmit = () => {
     if (!title || !amount || !selectedGroup || !selectedCategory || !paidBy) {
       return;
@@ -41,7 +77,7 @@ export default function NewExpenseScreen() {
         return acc;
       }, {} as Record<string, number>);
     } else {
-      splits = customSplit; // Custom split logic
+      splits = customSplits; // Custom split logic
     }
 
     addExpense({
@@ -176,14 +212,17 @@ export default function NewExpenseScreen() {
         {splitType === 'custom' && (
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Custom Split</Text>
-            {/* Here you can add logic for custom splits, i.e., setting individual member splits */}
-            <TextInput
-              style={styles.input}
-              value={JSON.stringify(customSplit)} // Just an example, customize as needed
-              onChangeText={(text) => setCustomSplit(JSON.parse(text))}
-              placeholder="Enter custom splits (JSON format)"
-              placeholderTextColor="#94a3b8"
-            />
+            <Text style={styles.label}>Custom Split</Text>
+  <TextInput
+    style={styles.input}
+    value={customSplitText}
+    onChangeText={(text) => {
+      setCustomSplitText(text);
+      parseCustomSplitText(text);
+    }}
+    placeholder="e.g. I paid 100, John paid 200"
+    placeholderTextColor="#94a3b8"
+  />
           </View>
         )}
       </ScrollView>

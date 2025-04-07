@@ -96,6 +96,9 @@ export const useStore = create<ExpenseState>()(
             g.id === group.id ? group : g
           ),
         })),
+        clearAllData: () => {
+          set({ groups: [], expenses: [] });
+        },
     }),
     {
       name: 'expense-store',

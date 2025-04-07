@@ -1,4 +1,11 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
 import { useStore } from '@/store/useStore';
 import { format } from 'date-fns';
 import { Plus, Search } from 'lucide-react-native';
@@ -10,19 +17,34 @@ export default function HomeScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredGroups = groups.filter(group => 
+  const filteredGroups = groups.filter((group) =>
     group.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalBalance = expenses.reduce((acc, expense) => acc + expense.amount, 0);
+  const totalBalance = expenses.reduce(
+    (acc, expense) => acc + expense.amount,
+    0
+  );
   const totalOwed = expenses.reduce((acc, expense) => {
-    const isOwed = expense.splits[expense.paidBy] > expense.amount / Object.keys(expense.splits).length;
-    return isOwed ? acc + (expense.splits[expense.paidBy] - expense.amount / Object.keys(expense.splits).length) : acc;
+    const isOwed =
+      expense.splits[expense.paidBy] >
+      expense.amount / Object.keys(expense.splits).length;
+    return isOwed
+      ? acc +
+          (expense.splits[expense.paidBy] -
+            expense.amount / Object.keys(expense.splits).length)
+      : acc;
   }, 0);
 
   const totalReceivable = expenses.reduce((acc, expense) => {
-    const isReceivable = expense.splits[expense.paidBy] < expense.amount / Object.keys(expense.splits).length;
-    return isReceivable ? acc + (expense.amount / Object.keys(expense.splits).length - expense.splits[expense.paidBy]) : acc;
+    const isReceivable =
+      expense.splits[expense.paidBy] <
+      expense.amount / Object.keys(expense.splits).length;
+    return isReceivable
+      ? acc +
+          (expense.amount / Object.keys(expense.splits).length -
+            expense.splits[expense.paidBy])
+      : acc;
   }, 0);
 
   return (
@@ -31,7 +53,8 @@ export default function HomeScreen() {
         <Text style={styles.title}>Expense Tracker</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => router.push('/expense/new')}>
+          onPress={() => router.push('/expense/new')}
+        >
           <Plus size={24} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -50,30 +73,46 @@ export default function HomeScreen() {
       <View style={styles.balanceContainer}>
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Total Balance</Text>
-          <Text style={[styles.balanceAmount, { color: totalBalance >= 0 ? '#059669' : '#dc2626' }]}>
+          <Text
+            style={[
+              styles.balanceAmount,
+              { color: totalBalance >= 0 ? '#059669' : '#dc2626' },
+            ]}
+          >
             ${Math.abs(totalBalance).toFixed(2)}
           </Text>
-          <Text style={styles.balanceType}>{totalBalance >= 0 ? 'you are owed' : 'you owe'}</Text>
+          <Text style={styles.balanceType}>
+            {totalBalance >= 0 ? 'you are owed' : 'you owe'}
+          </Text>
         </View>
         <View style={styles.balanceDetailsContainer}>
           <View style={[styles.balanceDetailCard, styles.owedCard]}>
             <Text style={styles.detailLabel}>You are owed</Text>
-            <Text style={[styles.detailAmount, styles.owedAmount]}>${totalOwed.toFixed(2)}</Text>
+            <Text style={[styles.detailAmount, styles.owedAmount]}>
+              ${totalOwed.toFixed(2)}
+            </Text>
           </View>
           <View style={[styles.balanceDetailCard, styles.oweCard]}>
             <Text style={styles.detailLabel}>You owe</Text>
-            <Text style={[styles.detailAmount, styles.oweAmount]}>${totalReceivable.toFixed(2)}</Text>
+            <Text style={[styles.detailAmount, styles.oweAmount]}>
+              ${totalReceivable.toFixed(2)}
+            </Text>
           </View>
         </View>
       </View>
 
       <Text style={styles.sectionTitle}>Your Groups</Text>
-      <ScrollView style={styles.groupList}>
+      <ScrollView
+        style={styles.groupList}
+        contentContainerStyle={styles.groupListContent}
+        showsVerticalScrollIndicator={false}
+      >
         {filteredGroups.map((group) => (
           <TouchableOpacity
             key={group.id}
             style={styles.groupCard}
-            onPress={() => router.push(`/group/${group.id}`)}>
+            onPress={() => router.push(`/group/${group.id}`)}
+          >
             <View style={styles.groupInfo}>
               <View style={styles.groupAvatar}>
                 <Text style={styles.groupAvatarText}>
@@ -81,14 +120,26 @@ export default function HomeScreen() {
                 </Text>
               </View>
               <View style={styles.groupDetails}>
-                <Text style={styles.groupName}>{group.name}</Text>
+                <Text
+                  style={styles.groupName}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {group.name}
+                </Text>
                 <Text style={styles.groupMembers}>
-                  {group.members.length} members
+                  {group.members.length}{' '}
+                  {group.members.length === 1 ? 'member' : 'members'}
                 </Text>
               </View>
             </View>
             <View style={styles.groupBalance}>
-              <Text style={[styles.groupAmount, { color: group.totalExpenses >= 0 ? '#059669' : '#dc2626' }]}>
+              <Text
+                style={[
+                  styles.groupAmount,
+                  { color: group.totalExpenses >= 0 ? '#059669' : '#dc2626' },
+                ]}
+              >
                 ${Math.abs(group.totalExpenses).toFixed(2)}
               </Text>
               <Text style={styles.groupDate}>
@@ -235,6 +286,9 @@ const styles = StyleSheet.create({
   groupList: {
     flex: 1,
   },
+  groupListContent: {
+    paddingBottom: 16,
+  },
   groupCard: {
     backgroundColor: '#fff',
     padding: 16,
@@ -248,10 +302,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    width: '100%',
   },
   groupInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
   },
   groupAvatar: {
     width: 48,
@@ -269,6 +326,7 @@ const styles = StyleSheet.create({
   },
   groupDetails: {
     flex: 1,
+    marginRight: 4,
   },
   groupName: {
     fontSize: 18,
@@ -283,6 +341,7 @@ const styles = StyleSheet.create({
   },
   groupBalance: {
     alignItems: 'flex-end',
+    minWidth: 80,
   },
   groupAmount: {
     fontSize: 18,
